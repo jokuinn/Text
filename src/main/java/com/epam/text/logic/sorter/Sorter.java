@@ -13,14 +13,9 @@ import java.util.List;
 
 public class Sorter {
     private static final int INDEX = 1;
-    private static final char NEW_LINE = '\n';
-    private final ExpressionRecognizer recognizer;
-    private final Interpreter interpreter;
-
-    public Sorter(ExpressionRecognizer recognizer, Interpreter interpreter) {
-        this.recognizer = recognizer;
-        this.interpreter = interpreter;
-    }
+    private static final String PARAGRAPH_SEPARATOR = System.lineSeparator();
+    private final ExpressionRecognizer recognizer = new ExpressionRecognizer();
+    private final Interpreter interpreter = new Interpreter();
 
     private String calculateExpression(String stringValue, Interpreter interpreter) {
         int stringLength = stringValue.length();
@@ -48,22 +43,20 @@ public class Sorter {
     }
 
     public Component sortParagraphsBySentenceLength(Component component) {
-        List<Component> text = component.getChildren();
-        text.sort(Comparator.comparingInt(sentence -> {
+        List<Component> sortedParagraphs = new ArrayList<>(component.getChildren());
+        sortedParagraphs.sort(Comparator.comparingInt(sentence -> {
             List<Component> sentences = sentence.getChildren();
             return sentences.size();
         }));
 
-        return new Composite(text);
+        return new Composite(sortedParagraphs);
     }
 
-    private List<Component> getSortedLexemes(Component component){
-        List<Component> lexemes = component.getChildren();
-        lexemes.sort(Comparator.comparingInt(tempLexeme -> {
-            String lexeme = ((Leaf) tempLexeme).getValue();
-            return lexeme.length();
+    private void getSortedLexemes(List<Component> sortedLexemes){
+        sortedLexemes.sort(Comparator.comparingInt(lexeme -> {
+            String lexemeValue = ((Leaf) lexeme).getValue();
+            return lexemeValue.length();
         }));
-        return lexemes;
     }
 
     public Component sortSentencesByWordsLength(Component component){
@@ -71,15 +64,16 @@ public class Sorter {
         for (Component paragraph: component.getChildren()){
             List<Component> sentences = new ArrayList<>();
             for (Component sentence: paragraph.getChildren()){
-                List<Component> words = getSortedLexemes(sentence);
-                sentences.add(new Composite(words));
+                List<Component> sortedLexemes = new ArrayList<>(sentence.getChildren());
+                getSortedLexemes(sortedLexemes);
+                sentences.add(new Composite(sortedLexemes));
             }
             paragraphs.add(new Composite(sentences));
         }
         return new Composite(paragraphs);
     }
 
-    public String restoreText(Component root) {
+    public String restore(Component root) {
         StringBuilder text = new StringBuilder();
         for (Component paragraph : root.getChildren()) {
             for (Component sentence : paragraph.getChildren()) {
@@ -88,9 +82,9 @@ public class Sorter {
                     text.append(lexemeValue);
                 }
             }
-            text.append(NEW_LINE);
+            text.append(PARAGRAPH_SEPARATOR);
         }
-        return text.toString();
+        return text.toString().trim();
     }
 
 
